@@ -1,0 +1,11 @@
+name: dart_secretstore
+description: Dart binding for secret store client library
+author: Sahal Zain <zean00zone@gmail.com>
+homepage: https://github.com/zean00/dart-secretstore
+version: 0.1.0
+
+environment:
+  sdk: ">=2.5.0 <3.0.0"
+
+dependencies:
+  convert: ^2.1.1
