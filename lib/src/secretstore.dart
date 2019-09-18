@@ -50,21 +50,41 @@ class SecretStore {
   }
 
   String signHash(String secret, String hash) {
-    return Utf8.fromUtf8(_signHash(Utf8.toUtf8(secret), Utf8.toUtf8(hash)));
+    final pSecret = Utf8.toUtf8(secret);
+    final pHash = Utf8.toUtf8(hash);
+    final sign = _signHash(pSecret, pHash);
+    final res = Utf8.fromUtf8(sign);
+    pSecret.free();
+    pHash.free();
+    sign.free();
+    return res;
   }
 
   EncryptedDocumentKey getDocumentKey(String secret, String public) {
-    final esetPtr = _getDocumentKey(Utf8.toUtf8(secret), Utf8.toUtf8(public));
+    final pSecret = Utf8.toUtf8(secret);
+    final pPublic = Utf8.toUtf8(public);
+    final esetPtr = _getDocumentKey(pSecret, pPublic );
     final eset = esetPtr.load<DocumentKey>();
     final enckey = Utf8.fromUtf8(eset.encrypted_key);
     final common = Utf8.fromUtf8(eset.common_point);
     final encpoint = Utf8.fromUtf8(eset.encrypted_point);
     esetPtr.free();
+    pSecret.free();
+    pPublic.free();
     return EncryptedDocumentKey(common, encpoint, enckey);
   }
 
   String encryptDocument(String secret, String key, String hexData) {
-    return Utf8.fromUtf8(_encryptDoc(Utf8.toUtf8(secret), Utf8.toUtf8(key), Utf8.toUtf8(hexData)));
+    final pSecret = Utf8.toUtf8(secret);
+    final pKey = Utf8.toUtf8(key);
+    final pData = Utf8.toUtf8(hexData);
+    final pEnc = _encryptDoc(pSecret,pKey , pData);
+    final res = Utf8.fromUtf8(pEnc);
+    pSecret.free();
+    pKey.free();
+    pData.free();
+    pEnc.free();
+    return res;
   }
 
   String decryptDocument(String secret, String decrypt_secret, String common, List<String> shadows, int len, String hexData) {
@@ -72,9 +92,18 @@ class SecretStore {
     for (int i=0; i< shadows.length; i++) {
       shadowArr.elementAt(i).store(Utf8.toUtf8(shadows[i]));
     }
-  
-    final res = Utf8.fromUtf8(_decryptShadow(Utf8.toUtf8(secret), Utf8.toUtf8(decrypt_secret), Utf8.toUtf8(common), shadowArr, shadows.length, Utf8.toUtf8(hexData)));
+    final pSecret = Utf8.toUtf8(secret);
+    final pDs = Utf8.toUtf8(decrypt_secret);
+    final pCommon = Utf8.toUtf8(common);
+    final pData = Utf8.toUtf8(hexData);
+    final pDec = _decryptShadow(pSecret, pDs, pCommon, shadowArr, shadows.length, pData);
+    final res = Utf8.fromUtf8(pDec);
     shadowArr.free();
+    pDec.free();
+    pSecret.free();
+    pDs.free();
+    pCommon.free();
+    pData.free();
     return res;
   }
 }
