@@ -34,8 +34,8 @@ class SecretStore {
   Pointer<Utf8> Function(Pointer<Utf8> secret, Pointer<Utf8> key, Pointer<Utf8> data) _encryptDoc;
   Pointer<Utf8> Function(Pointer<Utf8> secret, Pointer<Utf8> decrypted_secret, Pointer<Utf8> common_point, Pointer<Pointer<Utf8>> shadows, int len, Pointer<Utf8> data) _decryptShadow;
   
-  SecretStore() {
-    dylib = dlopenPlatformSpecific('secretstore');
+  SecretStore({String path}) {
+    dylib = dlopenPlatformSpecific('secretstore', path:path);
     final signHashPtr = dylib.lookup<NativeFunction<sign_hash>>('sign_hash');
     _signHash = signHashPtr.asFunction<sign_hash>();
 
