@@ -35,17 +35,22 @@ class SecretStore {
   Pointer<Utf8> Function(Pointer<Utf8> secret, Pointer<Utf8> decrypted_secret, Pointer<Utf8> common_point, Pointer<Pointer<Utf8>> shadows, int len, Pointer<Utf8> data) _decryptShadow;
   
   SecretStore({String path}) {
-    dylib = dlopenPlatformSpecific('secretstore', path:path);
-    final signHashPtr = dylib.lookup<NativeFunction<sign_hash>>('sign_hash');
+    DynamicLibrary dylib;
+    if (Platform.isIOS) {
+      dylib = DynamicLibrary.process();
+    } else {
+      dylib = dlopenPlatformSpecific('secretstore', path:path);
+    }
+    final signHashPtr = dylib.lookup<NativeFunction<sign_hash>>('ss_sign_hash');
     _signHash = signHashPtr.asFunction<sign_hash>();
 
-    final docKeyPtr = dylib.lookup<NativeFunction<get_document_key>>('get_document_key');
+    final docKeyPtr = dylib.lookup<NativeFunction<get_document_key>>('ss_get_document_key');
     _getDocumentKey = docKeyPtr.asFunction<get_document_key>();
 
-    final encryptPtr = dylib.lookup<NativeFunction<encrypt>>('encrypt');
+    final encryptPtr = dylib.lookup<NativeFunction<encrypt>>('ss_encrypt');
     _encryptDoc = encryptPtr.asFunction<encrypt>();
 
-    final decryptPtr = dylib.lookup<NativeFunction<decrypt_shadow>>('decrypt_shadow');
+    final decryptPtr = dylib.lookup<NativeFunction<decrypt_shadow>>('ss_decrypt_shadow');
     _decryptShadow = decryptPtr.asFunction<DecryptShadow>();
   }
 
