@@ -33,13 +33,23 @@ class SecretStore {
   Pointer<DocumentKey> Function(Pointer<Utf8> secret,Pointer<Utf8> _serverKey) _getDocumentKey;
   Pointer<Utf8> Function(Pointer<Utf8> secret, Pointer<Utf8> key, Pointer<Utf8> data) _encryptDoc;
   Pointer<Utf8> Function(Pointer<Utf8> secret, Pointer<Utf8> decrypted_secret, Pointer<Utf8> common_point, Pointer<Pointer<Utf8>> shadows, int len, Pointer<Utf8> data) _decryptShadow;
+  Pointer<Utf8> Function(Pointer<Utf8> secret, Pointer<Utf8> decrypted_secret, Pointer<Utf8> common_point, Pointer<Pointer<Utf8>> shadows, int len) _decryptKey;
+  Pointer<Utf8> Function(Pointer<Utf8> key, Pointer<Utf8> data) _decrypt;
+  Pointer<Utf8> Function(Pointer<Utf8> public, Pointer<Utf8> secret) _sharedSecret;
   
-  SecretStore({String path}) {
-    DynamicLibrary dylib;
+  static final SecretStore _singleton = new SecretStore._internal();
+
+  factory SecretStore() {
+    return _singleton;
+  }
+  
+  SecretStore._internal() {
+  //SecretStore({String path}) {
+    //DynamicLibrary dylib;
     if (Platform.isIOS) {
       dylib = DynamicLibrary.process();
     } else {
-      dylib = dlopenPlatformSpecific('secretstore', path:path);
+      dylib = dlopenPlatformSpecific('secretstore');
     }
     final signHashPtr = dylib.lookup<NativeFunction<sign_hash>>('ss_sign_hash');
     _signHash = signHashPtr.asFunction<sign_hash>();
@@ -50,8 +60,17 @@ class SecretStore {
     final encryptPtr = dylib.lookup<NativeFunction<encrypt>>('ss_encrypt');
     _encryptDoc = encryptPtr.asFunction<encrypt>();
 
-    final decryptPtr = dylib.lookup<NativeFunction<decrypt_shadow>>('ss_decrypt_shadow');
-    _decryptShadow = decryptPtr.asFunction<DecryptShadow>();
+    final decryptShadowPtr = dylib.lookup<NativeFunction<decrypt_shadow>>('ss_decrypt_shadow');
+    _decryptShadow = decryptShadowPtr.asFunction<DecryptShadow>();
+
+    final decryptKeyPtr = dylib.lookup<NativeFunction<decrypt_key>>('ss_decrypt_key');
+    _decryptKey = decryptKeyPtr.asFunction<DecryptKey>();
+
+    final decryptPtr = dylib.lookup<NativeFunction<decrypt_doc>>('ss_decrypt');
+    _decrypt = decryptPtr.asFunction<decrypt_doc>();
+
+    final sharedPtr = dylib.lookup<NativeFunction<shared_secret>>('ss_shared_secret');
+    _sharedSecret = sharedPtr.asFunction<shared_secret>();
   }
 
   String signHash(String secret, String hash) {
@@ -62,6 +81,17 @@ class SecretStore {
     pSecret.free();
     pHash.free();
     sign.free();
+    return res;
+  }
+
+  String sharedSecret(String public, String secret) {
+    final pSecret = Utf8.toUtf8(secret);
+    final pPublic = Utf8.toUtf8(public);
+    final shared = _sharedSecret(pPublic, pSecret);
+    final res = Utf8.fromUtf8(shared);
+    pSecret.free();
+    pPublic.free();
+    shared.free();
     return res;
   }
 
@@ -108,6 +138,35 @@ class SecretStore {
     pSecret.free();
     pDs.free();
     pCommon.free();
+    pData.free();
+    return res;
+  }
+
+  String decryptKey(String secret, String decrypt_secret, String common, List<String> shadows, int len) {
+    final shadowArr = Pointer<Pointer<Utf8>>.allocate(count: shadows.length);
+    for (int i=0; i< shadows.length; i++) {
+      shadowArr.elementAt(i).store(Utf8.toUtf8(shadows[i]));
+    }
+    final pSecret = Utf8.toUtf8(secret);
+    final pDs = Utf8.toUtf8(decrypt_secret);
+    final pCommon = Utf8.toUtf8(common);
+    final pKey = _decryptKey(pSecret, pDs, pCommon, shadowArr, shadows.length);
+    final res = Utf8.fromUtf8(pKey);
+    shadowArr.free();
+    pKey.free();
+    pSecret.free();
+    pDs.free();
+    pCommon.free();
+    return res;
+  }
+
+  String decrypt(String key, String hexData) {
+    final pKey = Utf8.toUtf8(key);
+    final pData = Utf8.toUtf8(hexData);
+    final pDec = _decrypt(pKey, pData);
+    final res = Utf8.fromUtf8(pDec);
+    pDec.free();
+    pKey.free();
     pData.free();
     return res;
   }
