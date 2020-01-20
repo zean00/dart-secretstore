@@ -5,7 +5,8 @@ homepage: https://github.com/zean00/dart-secretstore
 version: 0.1.0
 
 environment:
-  sdk: ">=2.5.0 <3.0.0"
+  sdk: ">=2.6.0 <3.0.0"
 
 dependencies:
   convert: ^2.1.1
+  ffi: ^0.1.3

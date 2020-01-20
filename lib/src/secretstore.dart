@@ -2,6 +2,7 @@ import 'binding.dart';
 import 'types.dart';
 import 'dart:ffi';
 import 'dart:io';
+import 'package:ffi/ffi.dart';
 
 String _platformPath(String name, {String path}) {
   if (path == null) path = "";
@@ -78,9 +79,6 @@ class SecretStore {
     final pHash = Utf8.toUtf8(hash);
     final sign = _signHash(pSecret, pHash);
     final res = Utf8.fromUtf8(sign);
-    pSecret.free();
-    pHash.free();
-    sign.free();
     return res;
   }
 
@@ -89,9 +87,6 @@ class SecretStore {
     final pPublic = Utf8.toUtf8(public);
     final shared = _sharedSecret(pPublic, pSecret);
     final res = Utf8.fromUtf8(shared);
-    pSecret.free();
-    pPublic.free();
-    shared.free();
     return res;
   }
 
@@ -99,13 +94,11 @@ class SecretStore {
     final pSecret = Utf8.toUtf8(secret);
     final pPublic = Utf8.toUtf8(public);
     final esetPtr = _getDocumentKey(pSecret, pPublic );
-    final eset = esetPtr.load<DocumentKey>();
+    final eset = esetPtr.ref;
+    //final eset = esetPtr.load<DocumentKey>();
     final enckey = Utf8.fromUtf8(eset.encrypted_key);
     final common = Utf8.fromUtf8(eset.common_point);
     final encpoint = Utf8.fromUtf8(eset.encrypted_point);
-    esetPtr.free();
-    pSecret.free();
-    pPublic.free();
     return EncryptedDocumentKey(common, encpoint, enckey);
   }
 
@@ -115,17 +108,14 @@ class SecretStore {
     final pData = Utf8.toUtf8(hexData);
     final pEnc = _encryptDoc(pSecret,pKey , pData);
     final res = Utf8.fromUtf8(pEnc);
-    pSecret.free();
-    pKey.free();
-    pData.free();
-    pEnc.free();
     return res;
   }
 
   String decryptDocument(String secret, String decrypt_secret, String common, List<String> shadows, int len, String hexData) {
-    final shadowArr = Pointer<Pointer<Utf8>>.allocate(count: shadows.length);
+    final shadowArr = allocate<Pointer<Utf8>>(count: shadows.length);
     for (int i=0; i< shadows.length; i++) {
-      shadowArr.elementAt(i).store(Utf8.toUtf8(shadows[i]));
+      //shadowArr.elementAt(i).store(Utf8.toUtf8(shadows[i]));
+      shadowArr.elementAt(i).value = Utf8.toUtf8(shadows[i]);
     }
     final pSecret = Utf8.toUtf8(secret);
     final pDs = Utf8.toUtf8(decrypt_secret);
@@ -133,30 +123,20 @@ class SecretStore {
     final pData = Utf8.toUtf8(hexData);
     final pDec = _decryptShadow(pSecret, pDs, pCommon, shadowArr, shadows.length, pData);
     final res = Utf8.fromUtf8(pDec);
-    shadowArr.free();
-    pDec.free();
-    pSecret.free();
-    pDs.free();
-    pCommon.free();
-    pData.free();
     return res;
   }
 
   String decryptKey(String secret, String decrypt_secret, String common, List<String> shadows, int len) {
-    final shadowArr = Pointer<Pointer<Utf8>>.allocate(count: shadows.length);
+    final shadowArr = allocate<Pointer<Utf8>>(count: shadows.length);
     for (int i=0; i< shadows.length; i++) {
-      shadowArr.elementAt(i).store(Utf8.toUtf8(shadows[i]));
+      //shadowArr.elementAt(i).store(Utf8.toUtf8(shadows[i]));
+      shadowArr.elementAt(i).value = Utf8.toUtf8(shadows[i]);
     }
     final pSecret = Utf8.toUtf8(secret);
     final pDs = Utf8.toUtf8(decrypt_secret);
     final pCommon = Utf8.toUtf8(common);
     final pKey = _decryptKey(pSecret, pDs, pCommon, shadowArr, shadows.length);
     final res = Utf8.fromUtf8(pKey);
-    shadowArr.free();
-    pKey.free();
-    pSecret.free();
-    pDs.free();
-    pCommon.free();
     return res;
   }
 
@@ -165,9 +145,6 @@ class SecretStore {
     final pData = Utf8.toUtf8(hexData);
     final pDec = _decrypt(pKey, pData);
     final res = Utf8.fromUtf8(pDec);
-    pDec.free();
-    pKey.free();
-    pData.free();
     return res;
   }
 }

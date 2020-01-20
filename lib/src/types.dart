@@ -1,36 +1,9 @@
-import 'dart:convert';
 import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:convert/convert.dart';
+import 'package:ffi/ffi.dart';
 
-class Utf8 extends Struct<Utf8> {
-  @Uint8()
-  int char;
-
-  static String fromUtf8(Pointer<Utf8> ptr) {
-    final units = List<int>();
-    var len = 0;
-    while (true) {
-      final char = ptr.elementAt(len++).load<Utf8>().char;
-      if (char == 0) break;
-      units.add(char);
-    }
-    return Utf8Decoder().convert(units);
-  }
-
-  static Pointer<Utf8> toUtf8(String s) {
-    final units = Utf8Encoder().convert(s);
-    final ptr = Pointer<Utf8>.allocate(count: units.length + 1);
-    for (var i = 0; i < units.length; i++) {
-      ptr.elementAt(i).load<Utf8>().char = units[i];
-    }
-    // Add the C string null terminator '\0'
-    ptr.elementAt(units.length).load<Utf8>().char = 0;
-    return ptr;
-  }
-}
-
-class DocumentKey extends Struct<DocumentKey> {
+class DocumentKey extends Struct {
   Pointer<Utf8> common_point;
 
   Pointer<Utf8> encrypted_point;
@@ -39,7 +12,7 @@ class DocumentKey extends Struct<DocumentKey> {
 
   factory DocumentKey.allocate(
           Pointer<Utf8> common_point, Pointer<Utf8> encrypted_point, Pointer<Utf8> encrypted_key) =>
-      Pointer<DocumentKey>.allocate().load<DocumentKey>()
+      allocate<DocumentKey>().ref
         ..common_point = common_point
         ..encrypted_point = encrypted_point
         ..encrypted_key = encrypted_key;

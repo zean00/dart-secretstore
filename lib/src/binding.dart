@@ -1,5 +1,6 @@
 import 'dart:ffi';
 import 'types.dart';
+import 'package:ffi/ffi.dart';
 
 typedef sign_hash = Pointer<Utf8> Function(Pointer<Utf8> secret,Pointer<Utf8> hash);
 typedef shared_secret = Pointer<Utf8> Function(Pointer<Utf8> public,Pointer<Utf8> secret);
